@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Expense Log</title>
+<style>
+  :root {
+    --bg: #FAF8F5;
+    --card: #ffffff;
+    --border: #EFEAE3;
+    --text: #3D3833;
+    --muted: #8A8378;
+    --muted2: #B5AFA5;
+    --food: #E07A5F;
+    --travel: #3D8BFD;
+    --rent: #81B29A;
+    --ent: #9B5DE5;
+    --save: #F2CC8F;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding-bottom: 70px;
+  }
+  .container { max-width: 480px; margin: 0 auto; padding: 24px 16px; }
+  h1 { font-size: 24px; font-weight: 700; margin: 0; }
+  .subtitle { font-size: 13px; color: var(--muted); margin: 4px 0 20px; }
+
+  .cat-row {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 12px; margin-bottom: 10px;
+  }
+  .icon-box {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
+  .cat-name { font-weight: 500; flex: 1; }
+  .amt-wrap { display: flex; align-items: center; gap: 4px; }
+  .amt-wrap span { color: var(--muted2); font-size: 14px; }
+  input[type=number] {
+    width: 80px; text-align: right; border: none; border-bottom: 2px solid var(--border);
+    outline: none; background: transparent; font-size: 16px; padding: 4px 0;
+    color: var(--text);
+  }
+  input[type=number]:focus { border-bottom-color: var(--text); }
+  .add-btn {
+    width: 36px; height: 36px; border-radius: 10px; border: none;
+    color: white; font-size: 20px; font-weight: bold; cursor: pointer; flex-shrink: 0;
+  }
+
+  .toast {
+    text-align: center; font-size: 13px; color: var(--rent); font-weight: 600;
+    padding: 4px 0; min-height: 20px;
+  }
+
+  .summary-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    padding: 16px; margin-top: 16px;
+  }
+  .summary-card p.label { font-size: 13px; color: var(--muted); margin: 0; }
+  .summary-card p.value { font-size: 26px; font-weight: 700; margin: 4px 0 0; }
+
+  .entries-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 16px; margin-top: 12px; }
+  .entries-card .label { font-size: 13px; color: var(--muted); font-weight: 600; margin: 0 0 8px; }
+  .entry-row { display: flex; justify-content: space-between; align-items: center; font-size: 14px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .entry-row:last-child { border-bottom: none; }
+  .entry-left { display: flex; align-items: center; gap: 8px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .entry-date { color: var(--muted2); font-size: 12px; }
+  .del-btn { border: none; background: none; color: #D9A39A; font-size: 16px; cursor: pointer; padding: 2px 6px; }
+
+  .filter-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 16px; margin-bottom: 12px; }
+  .filter-card .label { font-size: 13px; color: var(--muted); font-weight: 600; margin: 0 0 8px; }
+  .filter-row { display: flex; gap: 10px; }
+  .filter-row > div { flex: 1; }
+  .filter-row label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px; }
+  input[type=date] {
+    width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 8px;
+    font-size: 14px; color: var(--text); background: var(--bg);
+  }
+  .clear-filter { margin-top: 8px; background: none; border: none; color: var(--muted); font-size: 12px; text-decoration: underline; cursor: pointer; padding: 0; }
+
+  .breakdown-row { display: flex; justify-content: space-between; font-size: 14px; padding: 4px 0; }
+  .breakdown-total { display: flex; justify-content: space-between; font-weight: 700; border-top: 1px solid var(--border); margin-top: 6px; padding-top: 8px; }
+
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0; background: var(--card);
+    border-top: 1px solid var(--border); display: flex;
+  }
+  .nav-btn {
+    flex: 1; padding: 10px 0; text-align: center; border: none; background: none;
+    font-size: 12px; font-weight: 600; color: var(--muted2); cursor: pointer;
+  }
+  .nav-btn.active { color: var(--text); }
+  .nav-icon { font-size: 18px; display: block; margin-bottom: 2px; }
+
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .bar-chart-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .bar-label { width: 90px; font-size: 12px; flex-shrink: 0; }
+  .bar-track { flex: 1; background: var(--border); border-radius: 4px; height: 14px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; }
+  .bar-value { font-size: 12px; font-weight: 600; width: 70px; text-align: right; flex-shrink: 0; }
+
+  .empty-msg { text-align: center; color: var(--muted); padding: 24px 0; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Expense Log</h1>
+  <p class="subtitle">Tap a category, enter the amount, done. Stored on this device only.</p>
+
+  <!-- ENTRY VIEW -->
+  <div id="view-entry" class="view active">
+    <div id="cat-rows"></div>
+    <div class="toast" id="toast"></div>
+
+    <div class="summary-card">
+      <p class="label">Total tracked (all time)</p>
+      <p class="value" id="grand-total">₹0</p>
+    </div>
+
+    <div class="entries-card">
+      <p class="label">Recent entries</p>
+      <div id="recent-entries"></div>
+    </div>
+  </div>
+
+  <!-- ANALYTICS VIEW -->
+  <div id="view-analytics" class="view">
+    <div class="filter-card">
+      <p class="label">Date range</p>
+      <div class="filter-row">
+        <div>
+          <label>From</label>
+          <input type="date" id="date-from">
+        </div>
+        <div>
+          <label>To</label>
+          <input type="date" id="date-to">
+        </div>
+      </div>
+      <button class="clear-filter" id="clear-filter">Clear filter</button>
+    </div>
+
+    <div id="analytics-content"></div>
+  </div>
+
+  <div class="bottom-nav">
+    <button class="nav-btn active" id="nav-entry">
+      <span class="nav-icon">＋</span>Add
+    </button>
+    <button class="nav-btn" id="nav-analytics">
+      <span class="nav-icon">📊</span>Analytics
+    </button>
+  </div>
+</div>
+
+<script>
+const CATEGORIES = [
+  { id: "Food", icon: "🍽️", color: "var(--food)", hex: "#E07A5F" },
+  { id: "Travel", icon: "✈️", color: "var(--travel)", hex: "#3D8BFD" },
+  { id: "Rent", icon: "🏠", color: "var(--rent)", hex: "#81B29A" },
+  { id: "Entertainment", icon: "🎬", color: "var(--ent)", hex: "#9B5DE5" },
+  { id: "Savings", icon: "🐷", color: "var(--save)", hex: "#F2CC8F" },
+];
+
+const STORAGE_KEY = "expense_entries_v1";
+
+function loadEntries() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) { return []; }
+}
+function saveEntries(entries) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+}
+
+let entries = loadEntries();
+
+// Build category rows
+const catRowsEl = document.getElementById("cat-rows");
+CATEGORIES.forEach(cat => {
+  const row = document.createElement("div");
+  row.className = "cat-row";
+  row.innerHTML = `
+    <div class="icon-box" style="background:${cat.hex}22;">${cat.icon}</div>
+    <span class="cat-name">${cat.id}</span>
+    <div class="amt-wrap">
+      <span>₹</span>
+      <input type="number" inputmode="decimal" placeholder="0" id="input-${cat.id}">
+    </div>
+    <button class="add-btn" style="background:${cat.hex}" data-cat="${cat.id}">+</button>
+  `;
+  catRowsEl.appendChild(row);
+});
+
+// Add handlers
+document.querySelectorAll(".add-btn").forEach(btn => {
+  btn.addEventListener("click", () => addEntry(btn.dataset.cat));
+});
+CATEGORIES.forEach(cat => {
+  document.getElementById(`input-${cat.id}`).addEventListener("keydown", e => {
+    if (e.key === "Enter") addEntry(cat.id);
+  });
+});
+
+function addEntry(catId) {
+  const input = document.getElementById(`input-${catId}`);
+  const val = parseFloat(input.value);
+  if (!val || val <= 0) return;
+  entries.push({
+    id: Date.now() + "-" + catId,
+    category: catId,
+    amount: val,
+    date: new Date().toISOString()
+  });
+  saveEntries(entries);
+  input.value = "";
+  showToast(`Added ₹${val} to ${catId}`);
+  renderEntry();
+  renderAnalytics();
+}
+
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  setTimeout(() => { if (t.textContent === msg) t.textContent = ""; }, 1500);
+}
+
+function deleteEntry(id) {
+  entries = entries.filter(e => e.id !== id);
+  saveEntries(entries);
+  renderEntry();
+  renderAnalytics();
+}
+
+function fmt(n) {
+  return "₹" + n.toLocaleString("en-IN", { maximumFractionDigits: 2 });
+}
+
+function renderEntry() {
+  const total = entries.reduce((s, e) => s + e.amount, 0);
+  document.getElementById("grand-total").textContent = fmt(total);
+
+  const recentEl = document.getElementById("recent-entries");
+  recentEl.innerHTML = "";
+  if (entries.length === 0) {
+    recentEl.innerHTML = `<div class="empty-msg">No entries yet. Add your first expense above.</div>`;
+    return;
+  }
+  entries.slice().reverse().slice(0, 10).forEach(e => {
+    const cat = CATEGORIES.find(c => c.id === e.category);
+    const d = new Date(e.date);
+    const row = document.createElement("div");
+    row.className = "entry-row";
+    row.innerHTML = `
+      <div class="entry-left">
+        <span class="dot" style="background:${cat.hex}"></span>
+        <span>${e.category}</span>
+        <span class="entry-date">${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+      </div>
+      <div class="entry-left">
+        <span style="font-weight:600">${fmt(e.amount)}</span>
+        <button class="del-btn" data-id="${e.id}">🗑️</button>
+      </div>
+    `;
+    recentEl.appendChild(row);
+  });
+  recentEl.querySelectorAll(".del-btn").forEach(b => {
+    b.addEventListener("click", () => deleteEntry(b.dataset.id));
+  });
+}
+
+function getFilteredEntries() {
+  const from = document.getElementById("date-from").value;
+  const to = document.getElementById("date-to").value;
+  return entries.filter(e => {
+    const d = e.date.slice(0, 10); // YYYY-MM-DD
+    if (from && d < from) return false;
+    if (to && d > to) return false;
+    return true;
+  });
+}
+
+function renderAnalytics() {
+  const filtered = getFilteredEntries();
+  const content = document.getElementById("analytics-content");
+  const total = filtered.reduce((s, e) => s + e.amount, 0);
+
+  if (filtered.length === 0) {
+    content.innerHTML = `<div class="empty-msg">No expenses in this range. Add entries or adjust the date filter.</div>`;
+    return;
+  }
+
+  const totals = CATEGORIES.map(c => ({
+    ...c,
+    value: filtered.filter(e => e.category === c.id).reduce((s, e) => s + e.amount, 0)
+  }));
+  const maxVal = Math.max(...totals.map(t => t.value), 1);
+
+  let html = `<div class="summary-card">
+    <p class="label">Total in range</p>
+    <p class="value">${fmt(total)}</p>
+  </div>`;
+
+  html += `<div class="entries-card"><p class="label">By category</p>`;
+  totals.forEach(t => {
+    const pct = total ? Math.round((t.value / total) * 100) : 0;
+    const barPct = Math.round((t.value / maxVal) * 100);
+    html += `
+      <div class="bar-chart-row">
+        <div class="bar-label">${t.icon} ${t.id}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${barPct}%;background:${t.hex}"></div></div>
+        <div class="bar-value">${fmt(t.value)} (${pct}%)</div>
+      </div>
+    `;
+  });
+  html += `</div>`;
+
+  content.innerHTML = html;
+}
+
+// View switching
+document.getElementById("nav-entry").addEventListener("click", () => {
+  document.getElementById("view-entry").classList.add("active");
+  document.getElementById("view-analytics").classList.remove("active");
+  document.getElementById("nav-entry").classList.add("active");
+  document.getElementById("nav-analytics").classList.remove("active");
+});
+document.getElementById("nav-analytics").addEventListener("click", () => {
+  document.getElementById("view-analytics").classList.add("active");
+  document.getElementById("view-entry").classList.remove("active");
+  document.getElementById("nav-analytics").classList.add("active");
+  document.getElementById("nav-entry").classList.remove("active");
+  renderAnalytics();
+});
+
+document.getElementById("date-from").addEventListener("change", renderAnalytics);
+document.getElementById("date-to").addEventListener("change", renderAnalytics);
+document.getElementById("clear-filter").addEventListener("click", () => {
+  document.getElementById("date-from").value = "";
+  document.getElementById("date-to").value = "";
+  renderAnalytics();
+});
+
+renderEntry();
+renderAnalytics();
+</script>
+</body>
+</html>
